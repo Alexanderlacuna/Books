@@ -1,0 +1,19 @@
+class Node:
+    def __init__(self,value):
+        self.value = value
+
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+        self.tail = None
+
+    def __insert__(self,val):
+        if self.head == None:
+            self.head = Node(val)
+        else:
+            current = self.head
+            while (current.next!=None):
+                current = current.next
+
+            current.next = Node(val)
