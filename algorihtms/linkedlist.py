@@ -26,10 +26,30 @@ class LinkedList:
             current = current.next
         return "->".join(nodes)
 
+    def delete_head(self):
+        if self.head !=None:
+            self.head.next = self.head
 
-    def delete(self,head):
-        raise Exception("Not implemented")
+    def delete(self,val):
+        if self.head !=None:
+            prev = None
+            current = self.head
+            while (current!=None):
+                if current.value == val:
+                    if prev  == None:
+                        self.head = current.next
 
+                    else:
+                        prev  = current
+                        prev.next = current.next
+                    break
+                else:
+                    prev = current
+                    current = current.next
+
+                    
+            
+                
 
 
             
