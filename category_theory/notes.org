@@ -1,0 +1,103 @@
+* category theory
+#+OPTIONS: ^:{} 
+
+[[[[https://bartoszmilewski.com/2014/10/28/category-theory-for-programmers-the-preface/]]][book source]]
+
+essence of catogory is composition
+
+see f::A->B
+
+see f:: B-> C
+
+make composition
+
+see f::A -> C
+
+see image below
+
+[[https://bartoszmilewski.files.wordpress.com/2014/10/img_1330.jpg][see image representation]]
+
+
+** arrows
+as functions from a to b
+arrows -> morphisms
+
+composition  with arrows
+
+from above g.f meaning g after f  will apply f function then the g function
+
+/in mathematics and haskell fn compose from right to left/
+
+#+BEGIN_SRC haskell
+  B f(A a); takes of type A and returns B
+
+  C g(B,b) takes of types B and return C
+
+  
+#+END_SRC
+
+**
+above code write a composition that takes from A to C
+
+#+BEGIN_SRC rust
+
+	fn f(a:A) -> B {
+
+	    return b 
+	}
+
+
+	fn g (b:B) -> C {
+         return c
+
+	}
+	 fn g_after_f(item:A)-> C {
+
+	     return g(f(a))
+
+	 }
+
+
+#+END_SRC
+
+
+*** properties of composition
+properties
+
++ associative that means f* (g*h) is same as (f*g)*h -> f*g*h
+
+
+#+BEGIN_SRC haskell
+
+
+f:: A -> B
+
+g:: B -> C
+
+h:: C -> D
+
+
+h. (g.f) == (h. g) .f == h.g.f
+#+END_SRC
+
++ identity
+
+for every object A there consists a morphism such that
+
+A-> A (A_{id})
+
+
+f.idA = f
+
+idB.f = f 
+
+#+BEGIN_SRC rust
+
+   fn  identity(a:A) -> A {
+
+       return a
+  }
+
+#+END_SRC
+
+* Types and functions
