@@ -1,0 +1,31 @@
+* Monads
+A monad is ann algebraic structure in categeory theory,and in haskell
+is used to describe computations as sequences of steps,and to handle
+side effect such as state and IO
+
+..Can be used(along with abstract data types) to allow actions (e.g mutable
+variables) to implemented safely
+
+
+* Definition of a monad
+A monad consists of three objects,which must satisfy the monad law
+
++ A type constructor(M) such that for any type (a) the type (M a) is the
+  type of a computation in the monad (M) that produces a result of type(a)
+
++ A function (return ::a rightarrow M,a) this if (x::a) the (return x) is
+  a computation in (M) that when executed,will produce a value of type(a)
+
++ A function (>>=)::M , a rightarrow (a rightarrow M,b) rightarrow M,b)
+
+ ++ the  first argument is a computation that produces  a value of type(a)
+ ++ the second argument is a functional that requires an argument of type (a)
+ and returns a computation that produces of value of type (b)
+
+ ++ the results is a computation that will produce a value of type(b)
+ it works by running the first computation and passing it results to the
+ the funcitons that  returns the second computation,which is then executed
+
+*
+
+[[https://en.wikipedia.org/wiki/Monad_(functional_programming)][wikipedia on monads]]

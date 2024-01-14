@@ -1,0 +1,46 @@
+* Optimization
+Bad designs produce unexpected consequences whereas good designs produce
+unxpected benefits
+
+** 1.4.1 Memoization
+
+A technique of storing the results of expensive calculations so that the
+result can be looked up instead of recalculated
+
+
+#+BEGIN_SRC javascript
+
+
+  const g = v => {
+      for (var i=0; i <1000000 ; ++1) {
+	  console.log("processing index",i) ;;makes the function impure
+      }
+
+      return v;
+  }
+#+END_SRC
+
+
+
+#+BEGIN_SRC javascript
+ut  ;;make it pure
+
+  const gCache = {}
+  const mg = v => {
+      if (gCache["v"]  === undefined) {
+	  const result = g(v);
+	  gCache[v] result;
+      }
+
+      return g Cache[v]'
+  }
+#+END_SRC
+
+
+** functional programming
+
+1. All functions are Pure (no side effects)
+
+2. All values are immutable  (no variables)
+
+3. iteration is performed via recursion (no loops)
