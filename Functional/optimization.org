@@ -44,3 +44,42 @@ ut  ;;make it pure
 2. All values are immutable  (no variables)
 
 3. iteration is performed via recursion (no loops)
+
+
+
+
+** high order functions vs first order functions
+
+
+from the concept of passing functions as parameters and returning function as return values
+we get high order functions the opposite is first order functions
+
+
+nOTE COMPOSITION IS FROM RIGHT TO LEFT
+
+
+fog(x) f after g
+
+
+f: X-> Y  (domain X) to codomain Y
+
+Y-> Z
+
+h: X -> Z for all x in X
+
+
+
+
+** 2.4.1. Point-free Notation
+
+Point-free notation (or style) means that a Function is defined WITHOUT explicitly
+mentioning one or more of its Parameters.
+
+
+
+
+not_large:: int -> string
+
+not large num ::  not (is Large num)
+
+relook at curryign
