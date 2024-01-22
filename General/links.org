@@ -19,3 +19,9 @@ jgart:[[https://www.metalevel.at/prolog]]
 * api designs
 
 [[https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design]]
+
+
+
+* monads
+** py
+[[https://www.miguelfarrajota.com/2021/06/monads-in-python-with-pymonad/]]
