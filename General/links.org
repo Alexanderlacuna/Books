@@ -1,0 +1,21 @@
+
+
+* magit docs
+
+https://emacsair.me/2017/09/01/magit-walk-through/
+
+* reads 
+
+from bons:[[https://cs3110.github.io/textbook/chapters/intro/3110.html]]
+jgart:[[https://www.metalevel.at/prolog]]
+
+
+[[ https://aartaka.me/]]
+[[https://github.com/aartaka/emacs-config]]
+[[https://github.com/aartaka/stdlambda]]
+[[https://aartaka.me/projects]]
+
+
+* api designs
+
+[[https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design]]
