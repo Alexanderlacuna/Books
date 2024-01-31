@@ -33,3 +33,6 @@ jgart:[[https://www.metalevel.at/prolog]]
 	[[https://www.miguelfarrajota.com/2021/06/monads-in-python-with-pymonad/]]
 
 	[[https://gcore.com/learning/how-to-install-proton-on-linux/]]
+
+
+[[https://itsfoss.com/bootable-windows-usb-linux]]

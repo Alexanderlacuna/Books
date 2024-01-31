@@ -25,3 +25,7 @@ link to them
 ```
 
 all the instrunction are in the .el file (highlight-indent-guides)
+
+
+
+[emacs terminal](https://chadaustin.me/2024/01/truecolor-terminal-emacs)
