@@ -221,8 +221,6 @@ pr <- calc_genoprob(iron, map, error_prob = 0.002, cores =4)
 #+END_SRC
 
 
-
-
 The genome scan functions ( see below) use genotype probabilities as
 we as a matrix of phenotypes. If you wished to perform
 a genome scan via and additive allele model ( what is additve
@@ -233,3 +231,12 @@ using the function  geneprob_to_alleleprob(pr)
 #+BEGIN_SRC R
 apr <- genoprob_to_alleleprob(pr)
 #+END_SRC
+
+** Calculating a kinship matrix
+
+What is  a  kinship Matrix???
+https://www.youtube.com/watch?v=OcOWHGAo53M
+
+Probability that inbred has  the sam allele for example A1A1
+Kinship probability that two related individual would have
+the same genetic markup  for the same locus
