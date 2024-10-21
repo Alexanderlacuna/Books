@@ -240,3 +240,80 @@ https://www.youtube.com/watch?v=OcOWHGAo53M
 Probability that inbred has  the sam allele for example A1A1
 Kinship probability that two related individual would have
 the same genetic markup  for the same locus
+
+
+If you wish to perform a genome scan by a linear mixed model,
+account for the relationship among individuals( in other words
+including a random polygenic effect), you'll need
+to  calculate a kinship matrix for the individuals.
+This is accomplished with the `calc_kinship()`
+function. It takes the genotypes probabilities as
+input
+#+BEGIN_SRC R
+kinship <- calc_kinship(pr)
+#+END_SRC 
+
+
+By default the genotype probabities are converted to allele
+probabilites, and the kinsip matrix is calculated as the
+proportion of shared alleles.
+To use genotype probabilites instead
+use  use_allele_probs=FALSE. Further, by
+default we calculate the kinship using both the autosomes
+and X chromosomes. To omit the X chromosome,
+we omit_x=True
+
+In calculating the kinship matrix, one may wish to eliminiate
+the effect of varying marker across the genome and only
+use probabilites along the grid of pseudomarkers
+(defined by the `step` argument to `insert_pseudomarkers()`
+To do so, we need to first use `calc_grid()` to determine
+the grid of pseudomarkers and then probs_to_grid
+to omit probabilites for positions that are not on the grid.
+
+#+BEGIN_SRC R
+  grid <- calc_grid(iron$gmap, step=1)
+  pr_grid <- probs_to_grid(pr, grid)
+  kinship_grid <- calc_kinship(pr_grid)
+
+#+END_SRC
+
+If, for you linear mixed model genome scan , you wish to use
+the `Leave one chromosome out (LOCO) `method (scan each
+chromosome using kinship matrix that is calculated
+using data from all other chromosomes)  use type="loco"
+in the call to `calc_kinship()`
+
+
+#+BEGIN_SRC R
+kinship_loco <- calc_kinship(pr, "loco")
+#+END_SRC
+
+
+On a multi- machine , You can get some speed-up via the cores
+argument, as with calc_genoprob().
+
+
+#+BEGIN_SRC R
+kinship_lock <- calc_kinship(pr, "loco" , cores=4)
+#+END_SRC
+
+
+
+** Special covariates for the X chromosomes
+
+In a QTL scan of the X chromosome, special covariates(such as sex)
+
+may need to be included under the null hypothesis of no
+to avoid spurious evidence of linkage (see https://doi.org/10.1534/genetics.106.061176)
+
+The particular X chromosome covariates  depends on the cross,
+and can be obtained with the function get_x_covar()
+
+#+BEGIN_SRC R
+Xcovar <- get_x_covar(iron)
+#+END_SRC
+
+
+** Performing a Genome scan
+What is a genome scan?
