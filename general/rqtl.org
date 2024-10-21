@@ -1,0 +1,134 @@
+* R/QTL2 developer guide
+r-qtl2 is a reimplementation for the r-qtl,
+qtl means quantitave trait loci
+location in chromosomes  (genetic loci)
+that influence trait in an individual
+QTL mapping - statistical method
+to map the trait to the genetic loci in a chromosome
+In this document, we'll describe the technical details of interests to those
+interested in contributing the rqtl package
+This package (rqtl-2) can be divided into three sectionsa/aspects
+
+
+** A hidden Markov model (HMM)
+this it calculate QTL genotype probabities given genetic marker data
+and to estimate genetic maps. This is coded in C++.
+Each possiblc cross type is  class inherited from the class QTLCROSS
+We're using Rcpp to connect from R to C++
+
+Question:
+- [] what is genetic marker data?
+- [] what is a genetic map
+  
+** Linear regression
+This is for QTL Mapping  by HAley-Knott regression.
+We're using RcppEigen and the Eigen Linerar algebra libary
+
+** Linear Mixed models
+
+for handling varying relatedness among individuals. again
+using RcppEigen and the *Eigen linear algebra library*
+
+
+We are redefining the basic data structures to be more general
+(to handl more complex crosses, such as the collaborative
+cros, magic lines  and Diversity outcross) ad to incorporate
+more information such as annotations of the phenotypes
+(for example with gene expression data, the gene
+indetifiers, physical locations of genes and the
+tissue that was measured)
+
+We are also defining th input data file format
+
+**  installation
+#+BEGIN_SRC r
+install.packages("qtl2")
+
+#+END_SRC
+
+** data file format
+the input data file format for r/qtl cannot handle handle complex crosses
+and so r/qtl2 we have defined a new format for the data files.
+
+
+
+Qtl mappign data consists of a set of table of data: marker genotypes,
+phenotypes, marker maps. etc.  In the new format these different tables
+are in  separate comma - delimited(CSV) files.
+In each file, the first column  is a set of IDS for the rows and
+the first row is a set of ids  of the columns
+For example, the phenotype data file will have individual IDs in the
+first column  and phenotypes names in the first row
+
+
+A few important changes in the tabular data
+
+1. we will use not ust the genetic marker map but also a  physical map (if available)
+2. Previously, pheotypes and covariates were combined, In thenew format, we
+   separate numeric phenotypes from the oftern non-numeric covariates
+
+3. We define a table of phenotype covariates. Theses are metadata
+   describing the phenotypes for example in the case of a phenotype
+  measured over time, one column in the phenotype covariate data could be
+  the time of measurement. For gene expression data, we would
+  have columns representing chromosome and physical position of genes,
+  as well as gene IDS
+
+In addition to the set of CSV files with the primary data, we need
+a separate control file with various control parameters or metadata,
+including the name of all the other data files and the genotype
+codes used in the genotype data file.
+The control file is a specific format using either `YAML` or `JSON`
+theses are human-readble text-files for representing relatively complex data
+
+
+A big advantage of the control file scheme is that it
+greatly simplies the function for reading in the data
+The function, read_cross2, has a single argument;
+the name(with path) of the control file.
+So you can read in data like this
+
+**control file loading**
+#+BEGIN_SRC R
+library(qtl2)
+grav2 <-  read_cross2("~/my_data/grav2.yaml")
+#+END_SRC
+
+
+The large number of files is a bit cumbersome, so we've made it possible
+to use a zip file containing all of the data files, and  to read that zip
+file directly.
+
+There's even a function for creating in the zip file
+#+BEGIN_SRC R
+zip_datafiles("~/my_data/grav2.yaml")
+#+END_SRC
+
+The `zip_datafiles()` function will read the control file to identify all of the
+relevant data files and then zip them up into a file with  the same name
+and location, but with the extension  `.zip ` ratherthatn `.yaml` or `.json`
+
+To read the data back in, we use the same read_cross2() function ,
+providing the name (and path) of the zip file rather tatn the cross file
+
+#+BEGIN_SRC R
+ grav2 <- read_cross2("~/my_data/gav2.zip")
+#+END_SRC
+
+This can even be done with remote files
+
+
+#+BEGIN_SRC R
+grav2 <- read_cross2("https://kbroman.org/qtl2/assets/sampledata/grav2/grav2.zip")
+#+END_SRC
+
+The other advantage of the zip file is that is that it is compressed and
+so small than the combined set of CSV files.
+
+The control file may be confusing for some user. To assist in its construction,
+there is a function `write_control_files() ` that takes the large set of control
+parameters as input and then writes the YAML or JSON control file in the appropriate
+format 
+
+
+

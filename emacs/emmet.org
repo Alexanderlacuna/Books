@@ -1,0 +1,4 @@
+* documentation on the emmet mode
+see main docs
+
+https://github.com/smihica/emmet-mode#usage

@@ -1,0 +1,4 @@
+## Algorithms
+key question what is algorithm?
+algorithm is a step by step instruction that show how to solve a
+problem 

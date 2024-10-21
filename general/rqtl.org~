@@ -1,0 +1,41 @@
+* R/QTL2 developer guide
+r-qtl2 is a reimplementation for the r-qtl,
+qtl means quantitave trait loci
+location in chromosomes  (genetic loci)
+that influence trait in an individual
+QTL mapping - statistical method
+to map the trait to the genetic loci in a chromosome
+In this document, we'll describe the technical details of interests to those
+interested in contributing the rqtl package
+This package (rqtl-2) can be divided into three sectionsa/aspects
+
+
+** A hidden Markov model (HMM)
+this it calculate QTL genotype probabities given genetic marker data
+and to estimate genetic maps. This is coded in C++.
+Each possiblc cross type is  class inherited from the class QTLCROSS
+We're using Rcpp to connect from R to C++
+
+Question:
+- [] what is genetic marker data?
+- [] what is a genetic map
+  
+** Linear regression
+This is for QTL Mapping  by HAley-Knott regression.
+We're using RcppEigen and the Eigen Linerar algebra libary
+
+** Linear Mixed models
+
+for handling varying relatedness among individuals. again
+using RcppEigen and the *Eigen linear algebra library*
+
+
+We are redefining the basic data structures to be more general
+(to handl more complex crosses, such as the collaborative
+cros, magic lines  and Diversity outcross) ad to incorporate
+more information such as annotations of the phenotypes
+(for example with gene expression data, the gene
+indetifiers, physical locations of genes and the
+tissue that was measured)
+
+We are also defining th input data file format 
