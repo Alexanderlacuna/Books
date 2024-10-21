@@ -157,3 +157,79 @@ in a set of Arabidopsis recombinant inbred lines(RIL) from `Morre et al. (2013) 
 library(qtl2)
 grav2 <- read_cross2(system.file("extdata", "grav2.zop" , package="qtl12"))
 #+END_SRC
+
+
+** Calculating genotype probabilities
+Big question
+1. What is genotype probabilities??? 
+computation of inheritance probabities
+The first basic task in the QTL analysis is to calculate conditional
+genotype probabilities, given the observed marker data at each
+putative QTL position.
+This is accomplished with the `calc_genoprob()`  function.
+Unlike the corresponding function R/qtl , the resukts
+is not inserted back into the input cross object but is
+returned  as a list of three dimensional
+arrays (one per chromosomes)  Each 3d array of probabilities
+i arranged as (individual * genotypes  * positions)
+
+If we wish to perform QTL calculations at position between
+markers (so called pseudomarkers)  we first need to insert
+such position into the genetic map with the function
+`insert_pseudomarkers() ` Unlike R/qtl the mao
+is kept separate from the genotype probabilities
+
+
+`From the docs`
+
+we'll use the iron dataset from Grant et al(2006)
+Hepatology 44.174-185 ( an intercrss) as an example
+WE FIRST load the data.
+
+#+BEGIN_SRC R
+library(qtl2)
+iron <- read_cross2(system.file("extdata", "iron.zip" , package="qtl2"))
+#+END_SRC
+
+
+We then user `insert_pseudomarkers()` to insert pseudomarkers into the
+genetic map. which we grab from the iron object as iron$gmap
+
+#+BEGIN_SRC R
+
+map <- insert_pseudomarkers(iron$gmap, step=1)
+
+#+END_SRC
+
+And next we use `calc_genoprob()` to calculate the QTL genotype probabilities
+
+#+BEGIN_SRC R
+ 
+pr <- calc_genoprob(iron, map,  error_prob = 0.002)
+#+END_SRC
+
+
+To speed up the calculations with large dataset on a multi-core machine
+you can use the argument cores. With cores = 0, the number
+of available cores will be detected via prallel::detectCores().
+Otherqise, specify the number of cores as a positive integer.
+
+#+BEGIN_SRC R
+
+pr <- calc_genoprob(iron, map, error_prob = 0.002, cores =4)  
+
+#+END_SRC
+
+
+
+
+The genome scan functions ( see below) use genotype probabilities as
+we as a matrix of phenotypes. If you wished to perform
+a genome scan via and additive allele model ( what is additve
+allele and additive allele model), you would first convert
+the genotype probabilitest to allele probabilites,
+using the function  geneprob_to_alleleprob(pr)
+
+#+BEGIN_SRC R
+apr <- genoprob_to_alleleprob(pr)
+#+END_SRC
