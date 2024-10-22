@@ -911,3 +911,314 @@ plot_pxg(g, iron$pheno[,"liver"], SEmult=2, swap_axes=TRUE, xlab="Liver phenotyp
 
 
 ** SNP association
+what are the type of crosses?
+For multi-parent crosses, it can be useful to collapse
+the genotype or allele probabilities according
+to the founder genotypes of the various SNPs in the region of  a Qtl.
+
+*** Qtl Analysis in Diversity Outbred Mice
+To illustrate this sort of SNP association analysis, we'll
+consider some Diversity Outbred mouse data.
+The Diversity Outcross(DO) mice are an advanced intercross
+population deriveed from the same eight founder strains as the collaborative
+Cross (Cc)
+
+We'll consider aa subset of the data fyrom Recla et al.(2014), available
+as part of the (qtl2data github respository). (The full data are in
+Do_Recla; the directory Doex contains a  reduced set, with just three
+chromosomes, one phenotype (OF_immobile_pct, percent immobile in the
+Open field test) and a reduced set of markers .
+
+You can download the data from  a  single zip file.
+
+#+BEGIN_SRC R
+file <- "https://raw.githubusercontent.com/rqtl/qtl2data/main/DOex/DOex.zip"
+DOex <- read_cross2(file)
+#+END_SRC
+
+Let's quickly whip through a basic analysis.
+We first, calculate genotype probabilities and
+convert them to allele probabilities,
+We'just use marker locations and not insert any pseudomarkers
+
+#+BEGIN_SRC R
+pr <- calc_genoprob(DOex, error_prob=0.002)
+apr <- genoprob_to_alleleprob(pr)
+
+#+END_SRC
+We calculate Kinship genotype probabilites and convert them to allele probabilites.
+We'll just use marker locations and not insert any pseudomarkers
+
+#+BEGIN_SRC R 
+pr <- calc_genoprob(DOex, error_prob=0.002)
+apr <- genoprob_to_alleleprob(pr)
+#+END_SRC
+
+
+We calculate kinship matrices(using LOCO method)though with the caveat that
+here we are considering genotypes on three chromosomes
+#+BEGIN_SRC R
+k <- calc_kinship(apr, "loco")
+#+END_SRC
+
+
+We create a numeric covariates for sex, be sure to include the individuals IDs as names.
+#+BEGIN_SRC R
+sex <- (DOex$covar$Sex == "male")*1
+names(sex) <- rownames(DOex$covar)
+#+END_SRC
+
+Note that you can create the vector and assign the names in one step using the basic R
+function setNames()
+
+
+#+BEGIN_SRC R
+sex <- setNames( (DOex$covar$Sex == "male")*1, rownames(DOex$covar) )  
+#+END_SRC
+
+We perform a genome scan with  a linear mixed model(adjusting for a residual
+polygenic effect) with sex as an additive covariate
+
+#+BEGIN_SRC R
+out <- scan1(apr, DOex$pheno, k, sex)
+#+END_SRC
+
+
+Here aplot of the results
+
+
+#+BEGIN_SRC  R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot(out, DOex$gmap)
+#+END_SRC
+
+
+
+
+There is a strong peak chromosome 2. Let's look at the QTL effects.
+We estimate them with scan1coef(). We need to subset the allele
+probabilites and the list of kinship matrices.
+
+#+BEGIN_SRC R
+coef_c2 <- scan1coef(apr[,"2"], DOex$pheno, k[["2"]], sex)  
+#+END_SRC
+
+
+For the DO,  wit h 8 QTL alleles, we can use the function `plot_coeffCC`
+which plots the 8 allele effects in the official Collaborative Cross(CC)
+colors. (Well, actually slightly modified colors, because I think the offical
+colors are kind of ugly). The strong locus seems to be mostly due to the NZO
+allele. Note that qtl2 packages include the vector of colors for the C as
+the object CCcolors there also CCorigcolors objects with the official colors.
+
+
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot_coefCC(coef_c2, DOex$gmap["2"], bgcolor="gray95", legend="bottomleft")
+#+END_SRC
+
+
+
+If you provide `plot_coeffCC()`with the genome scan output, it will display
+the LOD curve below the coefficent estimates.
+#+BEGIN_SRC R
+
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot_coefCC(coef_c2, DOex$gmap["2"], scan1_output=out, bgcolor="gray95", legend="bottomleft")
+
+#+END_SRC 
+
+
+
+
+*** Connecting to SNP and gene databases
+
+To perform SNP assocation analysis in the region of  a QTL, well need
+to grab data on all of the SNPs in the region, including the genotypes
+in the eight founder strains for the CC and DO populations.As a related
+task, we'll also want to identify the genes in the region.
+We want R/qtl2 to permit different ways of storing this information.
+For the CC and DO populations, we've prepared SQLITE database
+files for the variants in the CC founders and for the MGI mouse gene
+annotations.
+BUT others might wish to use a different kind of database, or may
+wish to query an online database.
+We provide a template for how touse R/qtl2 to
+connect the SNP and gene databases, with the functions
+`create_variant_query_func()` and `create_gene_query_func()`
+Each returns a function for querying variant and
+gene databases respectively. The query functions that
+are returned take just three arguments (chr, start end end)
+and themselves return a data frame of variants on the one
+hand and genes on the other.
+If you are analyzing the CC lines or a DO population,
+you can download the SQLITE databases that we have prepared
+and made available on FIgSHARE.
+
+WHat is CC and DO population???
+
+
+
+*** SNP associations
+
+Okay, now finally we ge to the SNP associations. We have a large
+peak on chromosome 2  and we want to look at individual
+SNPs in the region of the locus
+Well, actually, we first need to find the location of the inferred
+QTL. The peak LOD score on chromosome 2 occures at 52.4cM.
+But to find nearby SNPs, we really want to know the Mbp
+position. The calculations were only performed at the marker
+positions, and so can use `max()` giving both the `scan1()`
+output and the physical map, and ten pull out of the position
+from the results
+
+#+BEGIN_SRC R
+peak_Mbp <- max(out, DOex$pmap)$pos
+#+END_SRC
+
+The marker is at 96.8 Mbp. We'll focus on a 2Mbp inteval
+centered at 96.8 Mbp.
+We can pull ot the vairants in the 2Mbp interval centered
+at 96.8on chr 2 using the query funciton we define  above:
+
+
+#+BEGIN_SRC R
+
+variants <- query_variants(2, peak_Mbp - 1, peak_Mbp + 1)
+
+#+END_SRC
+
+Therre 27355 variants in the interval, including 27108 SNPs,
+127 indels, and 120 structural variants. We're  treating
+all of them as bialleelic markers (all but the major allel
+in the eight founder strains binned into a single allele).
+In the following w're going to just say SNP rather than variant
+even thoug the variants include indels and structural variants.
+
+
+After indentifying the varaints in the interval
+of interest, we use our genotype probabilities
+and the founder SNP genotypes to infer the SNP
+genotypes for the DO mice. That is, at each SNP
+we want to collapse the eight founder allele probabilities
+to two SNP allele probabities, using the SNP genotypes
+of the founders.
+
+
+We do this assuming that the genotype probabilities were
+calculated sufficienctly densely that they can be assumed
+to be constant in intervals, With this assumption, we then
+
+1.  Find the interval for each SNP.
+2. Reduce the SNPs to a “distinct” set: if two SNPs have the same strain distribution pattern (SDP; the pattern of alleles in the eight founders) and are in the same interval, by our assumption their allele probabilities will be the same.
+3. Take the average of the allele probabilities at the two endpoints of each interval.
+4. Collapse the 8 allele probabilities to two according to each observed SDP in the interval.
+
+We further create a look-up table relating the full set of SNPs to the reduced
+set (once of each observed SDP  in each interval)
+All of these steps are combined into signle function `scan1snps()`
+which takes the genotype probabilities, a sphysical map of those
+locations, the phenotype, the kinship matrix , covariates the
+query function for grabbing the SNPs in a given interval , and the
+chromosome , start and end positions for the interval, (If insert_psuedomarkers())
+was used to insert pseudomarkers you will need to use interp_map to get interpolated
+Mbp position for the pseudomarkers)
+#+BEGIN_SRC R
+out_snps <- scan1snps(pr, DOex$pmap, DOex$pheno, k[["2"]], sex, query_func=query_variants,
+                      chr=2, start=peak_Mbp-1, end=peak_Mbp+1, keep_all_snps=TRUE)
+#+END_SRC
+
+
+The output is a list with two components; lod is a matrix of LOD scores(with  a single
+column since we're using just one phenotype) and snpinfo is a data frame
+with  SNP information .with the arguments t keep_all_snps=TRUE, the snipinfo
+data frame contains information about all of the variants in the region with
+and index column indicating the equivalence classes.
+
+The function `plot_snpasso()` can be used to plotthe results, with
+points at rach of SNps. The default is plot all SNPs, In this case
+there are 27355, variants in the region  but only 167 distinct ones,
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot_snpasso(out_snps$lod, out_snps$snpinfo)
+#+END_SRC
+
+
+We can actually just type plot() rather than plot_snpasso() because
+with the snpinfo table in place of a genetic map,plot() detects
+that a SNP association plot should be created
+
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot(out_snps$lod, out_snps$snpinfo)
+#+END_SRC
+
+
+
+
+
+
+To get a table of the  SNps, with the largest LOD scores, use
+the function top_snps(). This will snow all SNPs with LOD scores
+
+within some amount (default is 1.5) of the maximum SNP LOD
+score, We're going to display  just a subset of the columns
+
+#+BEGIN_SRC
+top <- top_snps(out_snps$lod, out_snps$snpinfo)
+print(top[,c(1, 8:15, 20)], row.names=FALSE)
+##                     snp A_J C57BL_6J 129S1_SvImJ NOD_ShiLtJ NZO_HlLtJ CAST_EiJ PWK_PhJ WSB_EiJ    lod
+##              rs33297153   1        1           2          1         2        3       1       1 8.2151
+##             rs226751615   1        1           1          1         2        2       1       1 7.9496
+##             rs230653109   1        1           1          1         2        2       1       1 7.9496
+##             rs250407660   1        1           1          1         2        2       1       1 7.9496
+##             rs248216267   1        1           1          1         2        2       1       1 7.9496
+##             rs237564299   1        1           1          1         2        2       1       1 7.9496
+##             rs255011323   1        1           1          1         2        2       1       1 7.9496
+##             rs212448521   1        1           1          1         2        2       1       1 7.9496
+##              rs27379206   1        1           1          1         2        2       1       1 7.9496
+##              rs27379194   1        1           1   
+#+END_SRC
+
+The top SNPs all have 129, NZO and Cast with  common allele. different from
+the other 5 founders.The next-best SNPs, have just NZO and CAST with a common
+allele
+
+You can include a visualization of the strain distribution pattern of the
+SNPs in the association plot with the argument sdp_panel=TRUE
+#+BEGIN_SRC
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot(out_snps$lod, out_snps$snpinfo, drop_hilit=1.5, genes=genes, sdp_panel=TRUE)  
+#+END_SRC
+
+The  ~scansnps()~  function can also be used to perform a genome wide SNP assocation
+scan by providing a variant query function but leaving chr, star  and ended
+unspecified. In this case it maybe best to use  keep_all_snps =FALSE (the default)
+and only save the index SNPs.
+
+#+BEGIN_SRC R
+out_gwas <- scan1snps(pr, DOex$pmap, DOex$pheno, k, sex, query_func=query_variants, cores=0)  
+#+END_SRC
+
+
+We can make Mahnhattan plot of the results as follows. We use altcol to define a color
+for alternate chromosomes and gap=0 to have no gaps between chromosomes
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot(out_gwas$lod, out_gwas$snpinfo, altcol="green4", gap=0)
+#+END_SRC
+
+
+
+Notr that while there are LOD scores on the X chromosomes that are as large
+as those on chromosomes 2 , we're allowing a genotype x Sex interaction on the
+X chromosomes and so the test has 3 degrees of freedom(versus 2 degrees of freedom
+on the autosomes)  and so the LOD scores will naturall be larger.
+If we'd used the allele probabilites (apr above calculated from
+genoprob_to_alleleprob()) rather than the genotype probabilities
+we would be performing a test with  1  degree of freedom on both
+the X chromosome and the autosomes.
