@@ -317,3 +317,597 @@ Xcovar <- get_x_covar(iron)
 
 ** Performing a Genome scan
 What is a genome scan?
+To perform  a genome scan by /*Haley-Knott regression(Haley and Knott 1992) */
+use the function ~scan1()~
+~scan1()~ takes as input the genotype probabilites, a  matrix of phenotypes,
+optional addtive and interactice covariates, and the special X chromosome
+covariates.
+Another option is to provide  a vector of weights
+
+#+BEGIN_SRC R
+out <- scan1(pr, iron$pheno, Xcovar = Xcovar)
+#+END_SRC
+
+On a multi-core machine    you can get some speed via the cores
+arguments as with `cal_genoprob() ` and `calc_kinship()`
+
+#+BEGIN_SRC R
+out <- scan1(pr, iron$pheno, Xcovar =Xcovar, cores=4)
+#+END_SRC
+
+The functino plot_scan1() can be used to plot the ~LOD cureves ~
+You can just write plot(). as there's an S3 method
+~plot.scan1()~ and the  output of scan1() has class "scan2"
+Use the argument `lodcolumn` to indicate which column to plot.
+Unlike the `plot.scanone()` function in r/qtl the `plot_scan1()`
+function will onyl plot one set LOD curves at a time, and
+you need to prvoide the marker pseudomarkers map(created
+by insert pseudomarkers())
+
+#+BEGIN_SRC R
+par(mar=c(5.1, 4.1, 1.1, 1.1))
+ymx - maxload(out) # overall maximum LOD score
+
+plot(out, map, lodcolumn=1, col="slateblue", ylim=c(0, ymx*1.02))
+plot(out, map, lodcolumn=2, col="violetred", add=TRUE)
+legend("topleft", lwd=2, col=c("slateblue", "violetred"), colnames(out), bg="gray90")
+
+#+END_SRC
+
+
+
+** Finding LOD Peaks
+
+The function `find_peaks()` can be used to indetify a set of
+LOAD peaks that exceeds some threshold. It can also
+provide LOD support or Bayes credible intervals, by using the
+arguments drop( the amount to drop in the LOD support intervals)
+pr prob( the nominal coverage for the Bayes Credible intervals)
+
+You need to provide both the `scan1()`  output as well
+as the marker/pseudomarker map
+
+#+BEGIN_SRC r
+  find_peaks(out, map, threshold=4, drop=1.5)
+##   lodindex lodcolumn chr  pos     lod ci_lo ci_hi
+## 1        1     liver   2 56.8  4.9576  48.1  73.2
+## 2        1     liver   7 50.1  4.0508  13.1  53.6
+## 3        1     liver  16 28.6  7.6816   6.6  40.4
+## 4        2    spleen   8 13.6  4.3029   0.0  32.7
+## 5        2    spleen   9 56.6 12.0632  53.6  61.2
+
+
+#+END_SRC
+
+The  `find_peaks()` function can also pick out multiple peaks
+on a chromosome; each peak must exceed the chosen threshold
+and the argument peakdrop indicates the amount that
+te LOD curve must drop below the lowest of two adjacents peaks\
+
+**Use the feature with caution**
+
+#+BEGIN_SRC R
+find_peaks(out, map, threshold=4, peakdrop=1.8, drop=1.5)
+##   lodindex lodcolumn chr  pos     lod ci_lo ci_hi
+## 1        1     liver   2 56.8  4.9576  48.1  73.2
+## 2        1     liver   7 25.1  4.0400  13.1  28.4
+## 3        1     liver   7 50.1  4.0508  31.7  53.6
+## 4        1     liver  16 28.6  7.6816   6.6  40.4
+## 5        2    spleen   8 13.6  4.3029   0.0  32.7
+## 6        2    spleen   9 56.6 12.0632  53.6  61.2
+
+#+END_SRC
+
+
+The functions lod_int and bayes_int() can be used to derive the
+LOD support or Bayes credible intervals for QTL, for
+as specific chromosome and LOD score column.
+For example to obtain the Bayes interval for the locus
+on chromosome 9 for the second phenotype
+
+("spleen")
+
+
+#+BEGIN_SRC
+bayes_int(out, map, lodcolumn=2, chr=9, prob=0.95)
+##   ci_lo  pos ci_hi
+## 1  53.6 56.6  61.2
+#+END_SRC
+
+Both lod_int() and bayes_int takes a peakdrop
+arguument, If you wish to try to identify multiple
+peaks on a chromosome. Again use this feature with caution
+
+#+BEGIN_SRC r
+lod_int(out, map, lodcolumn=1, chr=7, peakdrop=1.8, drop=1.5)
+##   ci_lo  pos ci_hi
+## 1  13.1 25.1  28.4
+## 2  31.7 50.1  53.6
+#+END_SRC
+Each row in a different peak; the columns are the lower
+interval ednpoint, the estimated qtl position, and the upper
+interval endpoint
+
+
+By default in find_peaks(), bayes_int()
+and lod_int(), the interval endpoints are at markers
+This is controlled with the argument expand2markes, which
+defaults to TRUE.o allow the intevals endpoints to be at
+positions between markers(pseudomarkers) include expandmarkers=FALSE
+
+
+
+
+#+BEGIN_SRC R
+lod_int(out, map, lodcolumn=1, chr=7, peakdrop=1.8, drop=1.5, expand2markers=FALSE)  
+##   ci_lo  pos ci_hi
+## 1  13.1 25.1  28.4
+## 2  34.1 50.1  53.6
+
+#+END_SRC
+
+
+** Perfoming a genome csn with linear mixed model
+To perform a genome scan using a line mixed-model accounting
+for relationship among individuals using a random polygenic
+effect, you also use the function scan1(); you just need
+to provide the argument kinship, a kinship matrix (or for the
+LOCO method, a list of kinship matrices)
+
+#+BEGIN_SRC R
+  out_pg <-scan1(pr, iron$pheno, kinship, Xcovar=Xcovar)
+#+END_SRC
+
+Again a multicore machine you can get some speed-up
+using the cores arguments
+#+BEGIN_SRC R
+out_pg <- scan1(pr, iron$pheno, kinship, Xcovar=Xcovar, cores=4)
+#+END_SRC
+
+For the LOCO(leave one chromosome out) method, provide the list
+of kinship matrices as obtained from `calc_kinship()` with
+method="loco"
+
+#+BEGIN_SRC R
+out_pg_loco <- scan1(pr, iron$pheno, kinship_loco, Xcovar=Xcovar)
+#+END_SRC
+
+To plot the results, we again use `plot_scan1() ` or just type
+`plot()`
+Here is a plot of the LOD scores, by Haley-Knott
+regression and the linear mixed model using
+either of the standard kinship matrix of the matrix LOCO method
+
+
+
+#+BEGIN_SRC R
+color <- c("slateblue", "violetred", "green3")
+par(mar=c(4.1, 4.1, 1.6, 1.1))
+ymx <- max(maxlod(out), maxlod(out_pg), maxlod(out_pg_loco))
+for(i in 1:2) {
+    plot(out, map, lodcolumn=i, col=color[1], main=colnames(iron$pheno)[i],
+              ylim=c(0, ymx*1.02))
+    plot(out_pg, map, lodcolumn=i, col=color[2], add=TRUE)
+    plot(out_pg_loco, map, lodcolumn=i, col=color[3], add=TRUE, lty=2)
+    legend("topleft", lwd=2, col=color, c("H-K", "LMM", "LOCO"), bg="gray90", lty=c(1,1,2))
+}  
+#+END_SRC
+
+For the liver phenotype (top panel) the three methods
+give quite different result.s. The linear
+mixed model with an overall kinship matrix gives much lower
+LOD scores method gives higher LOD scores than Haley-Knott
+except on chormosme 16 where it gives lower LOD scores
+
+
+For the spleen phenotype (bottom panel) the linear mixed model withan overall
+kinship matrix gives much lower LOD Scores than the other methods.
+However, in this case Haley-Knott regression and the LOCO
+method give quite similar results
+
+Conclusion: we van have three main Haley-Knott, Linear Mixed MOdel, LOCO(subset)
+
+
+** Performing a genome scan with binary traits 
+
+
+The genome scans above were perfomed assuming that the residual variation
+followed normal distribution. This will often provide  a
+reasonable results  even if the residual are not normal,
+but an important special case is that of a binary tratis, with values
+0 and 1 which is best treated differently. The scan1() function can
+perform a genome scan with binary traits by logistic regression, using
+the arguments model="binary".  (The default value for the model
+argument is normal). At present, we can not account for the
+relationships among individuals in this analysis.
+Let first turn our two phenotypes into binary traits by thresholding
+at the median , One would generally not do this in practice ;;
+this is  just an illustration
+
+
+#+BEGIN_SRC R
+bin_pheno <- apply(iron$pheno, 2, function(a) as.numeric(a > median(a)))
+rownames(bin_pheno) <- rownames(iron$pheno)  
+#+END_SRC
+
+
+We now perform the genome scan as before , including model="binary" to indicate
+that the phenotypes are binary traits with values 0 and 1
+
+
+#+BEGIN_SRC R
+out_bin <- scan1(pr, bin_pheno, Xcovar=Xcovar, model="binary")
+#+END_SRC
+
+Here is a plot of these sets of LOD cuvrves
+
+#+BEGIN_SRC R
+par(mar=c(5.1, 4.1, 1.1, 1.1))
+ymx <- maxlod(out_bin)
+plot(out_bin, map, lodcolumn=1, col="slateblue", ylim=c(0, ymx*1.02))
+plot(out_bin, map, lodcolumn=2, col="violetred", add=TRUE)
+legend("topleft", lwd=2, col=c("slateblue", "violetred"), colnames(out_bin), bg="gray90")
+
+#+END_SRC
+
+
+WE can use the find_peaks as before
+
+
+#+BEGIN_SRC r
+find_peaks(out_bin, map, threshold=3.5, drop=1.5)
+
+##   lodindex lodcolumn chr  pos    lod ci_lo ci_hi
+## 1        1     liver   2 56.8 3.6303  48.1  73.2
+## 2        1     liver   8 38.0 3.5077  17.3  69.9
+## 3        1     liver  15 49.2 3.7789  16.4  49.2
+## 4        1     liver  16 27.6 7.5069   6.6  40.4
+## 5        2    spleen   9 57.6 9.2528  53.6  61.2
+
+#+END_SRC
+
+
+** Performing a permutation test
+What is a permutation test???
+To perform a permutation test to establish the statistical significance
+of the results a of a genome scan, use the function `scanperm()` .
+In r/qtl a single function, scanone() was used for both performing
+a genome scan and gettign permutation-basd significance
+thresholds, but in r/qtl2, we've decided to make to
+separate functions.
+
+The scan1perm() function takes the same arguments as
+`scan1()` plus additional arguments to control the
+permutations
+*** n-perm the numner of permutation replicates
+*** perm_Xsp control whether to perform autosome/X chromosome specifi/
+permutations(with perm_Xsp=True) or not (the default is to not)
+
+*** Perm_strata is a vector that defines the strata for a stratified permutation
+test
+*** chr_lengths is a vector of chromosomes lengths, ised in that case that
+Perm_Xsp =True
+
+
+As with `scan1()` you may provide a kinship matrix(or  vector kinhsip
+matrices for the leave one chromosome out (LOCO approach( in order
+too fit linear mixed model to account for relationship among individuals
+( In other words , include a random polygenic effect). If kinship
+is unspecified, the funtion perform ordinary Haley-knott regression
+To perform a permutaion test with the iron data, we do the following ;
+
+#+BEGIN_SRC R
+
+operm <- scan1perm(pr, iron$pheno, Xcovar=Xcovar, n_perm=1000)  
+#+END_SRC
+Note the need to specify special covariates for the X chromosome
+(via Xcovar) to be included under the null hypthosis of no QTL.
+And note that when these are provided, the default is
+to perform a stratified permutation test, using strata defined
+by the rows in Xcovar,
+In geneal,when the X chromosome is considered one will wish to
+stratify at least by sex.
+Also note that as with `scan1()` you can speed up
+the calculations on a multi-core machine by specifyin
+the arguments cores. With cores=0 , the number of
+available cores will be detected via parallel::detectCores().
+Otherwise specify the number of cores as a positive integer.
+For Large datasets, be mindful  of the amount of memory
+that will be needed, You may need to use fewer than the maximum
+number of cores, to avoid going beyond the available memory.
+
+
+
+#+BEGIN_SRC R
+operm <- scan1perm(pr, iron$pheno, Xcovar=Xcovar, n_perm=1000, cores=0)
+
+#+END_SRC
+
+
+To get estimated significance thresholds, use the function `summary()`
+
+#+BEGIN_SRC R
+  summary(operm)
+#+END_SRC
+
+
+#+BEGIN_SRC R
+## LOD thresholds (1000 permutations)
+##      liver spleen
+## 0.2   2.63   2.64
+## 0.05  3.46   3.46
+
+#+END_SRC
+
+
+
+
+The default is return the 5% significance thresholds.
+Thresholds for other (or for multiple) significance
+levels can be obtained  via the  aplha arguments
+summary(operm, alpha=c(0.2, 0.05))
+
+#+BEGIN_SRC
+summary(operm, alpha=c(0.2, 0.05))
+## LOD thresholds (1000 permutations)
+##      liver spleen
+## 0.2   2.63   2.64
+## 0.05  3.46   3.46
+
+#+END_SRC
+
+To obtain autosome/X chromosomes-specific significance
+thresholds, specify perm_Xsp=TRUE. In this case,
+you need to provide chromosome lengths which may be
+ontained with the function ~chr_lengths()~
+
+#+BEGIN_SRC R
+operm2 <- scan1perm(pr, iron$pheno, Xcovar=Xcovar, n_perm=1000,
+                    perm_Xsp=TRUE, chr_lengths=chr_lengths(map))
+#+END_SRC
+
+
+
+Separate permutations are performed for the autosomes and X chromosome,
+and considerably more permutation replicates are  needed for the X chromosomes,
+The computations take about twice as much time. See 
+https://pubmed.ncbi.nlm.nih.gov/17028340/
+The  significance thresholds are again derived via ~summary()~
+
+#+BEGIN_SRC R
+summary(operm2, alpha=c(0.2, 0.05))
+## Autosome LOD thresholds (1000 permutations)
+##      liver spleen
+## 0.2   2.65   2.54
+## 0.05  3.42   3.22
+## 
+## X chromosome LOD thresholds (28243 permutations)
+##      liver spleen
+## 0.2    3.1   4.02
+## 0.05   3.9   5.18\
+#+END_SRC
+
+
+Permutaions for a genome scan with a linear mixed model--based are performed
+by specifying the kinship argument. We can use the `Leave one chromosome out (LOCO)`
+method by providing `kinship_loco`, the list of kinship matrices calculated
+above the `calc_kinship()`
+
+
+
+
+#+BEGIN_SRC R
+operm3 <- scan1perm(pr, iron$pheno, kinship_loco, Xcovar=Xcovar, n_perm=1000,
+                    perm_Xsp=TRUE, chr_lengths=chr_lengths(map))
+  ;; Here are the estimated significance thresholds
+summary(operm3, alpha=c(0.2, 0.05))
+## Autosome LOD thresholds (1000 permutations)
+##      liver spleen
+## 0.2   2.64   2.62
+## 0.05  3.29   3.29
+## 
+## X chromosome LOD thresholds (28243 permutations)
+##      liver spleen
+## 0.2   3.14   4.37
+## 0.05  3.82   5.50
+
+#+END_SRC
+
+As with scan1  we can use scan1perm with binary traits, using the
+arguments ~model=binary~, Again, this can't be used witjn a kinship
+matrix, but all of the other arguments can be applied
+
+#+BEGIN_SRC R
+operm_bin <- scan1perm(pr, bin_pheno, Xcovar=Xcovar, model="binary",
+                       n_perm=1000, perm_Xsp=TRUE, chr_lengths=chr_lengths(map))
+#+END_SRC
+
+
+Here are the estimated 5% and 20% significance thresholds
+#+BEGIN_SRC R
+
+summary(operm_bin, alpha=c(0.2, 0.05))
+## Autosome LOD thresholds (1000 permutations)
+##      liver spleen
+## 0.2   2.60   2.63
+## 0.05  3.33   3.41
+## 
+## X chromosome LOD thresholds (28243 permutations)
+##      liver spleen
+## 0.2   3.16   3.06
+## 0.05  3.86   3.77
+#+END_SRC
+
+
+** Estimated QTL effects 
+The ~scan1()~ function returns only LOD scores. To obtain estimated
+QTL effects, use the function ~scan1coef()~. This function
+takes a single phenotype and the genotype probabilities
+for a single chromosome and returns a matrix with the estimated
+coefficients at each putative QTL location along the chrosome.
+
+For example, to get the estimated effects on chromosome 2
+for the Liver phenotyp, we'd do the following
+
+#+BEGIN_SRC R
+c2eff <- scan1coef(pr[,"2"], iron$pheno[,"liver"])  
+#+END_SRC
+
+The results os a matrix, 39 positions x 4 genotypes. To plot the effects,
+use the function ~plot-coef()~. There is again  an S3 method
+function ~plot.scan1coef()~, So one can just typle ~plot()~,
+but in either case you need to provide the map for the relevant
+chromosome.
+Use the argument columns, to indicate which coefficents columns to
+plot
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+col <- c("slateblue", "violetred", "green3")
+plot(c2eff, map["2"], columns=1:3, col=col)
+last_coef <- unclass(c2eff)[nrow(c2eff),] # pull out last coefficients
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])
+#+END_SRC
+The default is to provide phenotype averages for each genotype group.
+If instead you want additive and dominance effects, you can provide
+a square matrix of contrasts, as follows.
+#+BEGIN_SRC R
+c2effB <- scan1coef(pr[,"2"], iron$pheno[,"liver"],
+                    contrasts=cbind(mu=c(1,1,1), a=c(-1, 0, 1), d=c(0, 1, 0)))
+#+END_SRC
+
+
+The results will then contain the estimates of mu, a and d. Here's
+a plot of the additive and dominance effects, which are in the second
+and the third columns
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+plot(c2effB, map["2"], columns=2:3, col=col)
+last_coef <- unclass(c2effB)[nrow(c2effB),2:3] # last two coefficients
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])  
+#+END_SRC
+
+If you provide a kinship matrix to ~scna1coef~, it fits a linear
+mixed model(LMM) to account for a residual polygenic effect. Here let's
+use the kinship matrix from the LOCO method.
+
+#+BEGIN_SRC R
+c2eff_pg <- scan1coef(pr[,"2"], iron$pheno[,"liver"], kinship_loco[["2"]])
+#+END_SRC
+
+Here's plot of the estimates
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+col <- c("slateblue", "violetred", "green3")
+plot(c2eff_pg, map["2"], columns=1:3, col=col, ylab="Phenotype average")
+last_coef <- unclass(c2eff_pg)[nrow(c2eff_pg),]
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])
+#+END_SRC
+
+You can also get estimated additive and dominance effects, using a matrix of
+constasts.
+
+#+BEGIN_SRC R
+c2effB_pg <- scan1coef(pr[,"2"], iron$pheno[,"liver"], kinship_loco[["2"]],
+                       contrasts=cbind(mu=c(1,1,1), a=c(-1, 0, 1), d=c(-0.5, 1, -0.5)))  
+#+END_SRC
+
+
+Here's a plot of the results.
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+plot(c2effB_pg, map["2"], columns=2:3, col=col)
+last_coef <- unclass(c2effB_pg)[nrow(c2effB_pg),2:3]
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])
+#+END_SRC
+
+
+Another option for estimating the QTL effects it to tread them as random
+effects and calculate Best Linear Unbiased Predictors (BLUPS). This is
+particularly  valuable of /multi-parent populations/ such as collaborative
+Cross and Diversity Outbred Mice, where the  large number of possible genotypes
+at a QTL lead to considerable variability in the effect estimates.
+To calculate BLUPS, use `scanblup()` it takes same
+arguments as `scan1coeff()`  including the option of a kinship
+matrix to account or a residual polygenic effect
+
+
+#+BEGIN_SRC R
+c2blup <- scan1blup(pr[,"2"], iron$pheno[,"liver"], kinship_loco[["2"]])
+#+END_SRC
+
+Here is a plot of the BLUPs (as dashed curves) alongside the standard
+estimates. Note that BLUPs are centered at 0, while the coefficient
+estimates are centered at the phenotype average
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+col <- c("slateblue", "violetred", "green3")
+ylim <- range(c(c2blup, c2eff))+c(-1,1)
+plot(c2eff, map["2"], columns=1:3, col=col, ylab="Phenotype average", ylim=ylim,
+     xlab="Chr 2 position")
+plot(c2blup, map["2"], columns=1:3, col=col, add=TRUE, lty=2)
+last_coef <- unclass(c2eff)[nrow(c2eff),]
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])
+#+END_SRC
+
+
+The scan1coeff function can also provide estimated QTL effects for
+binary traits, with model="binary" (However, scan1blup has not yet
+benn implemented for binary traits.)
+
+#+BEGIN_SRC R
+c2eff_bin <- scan1coef(pr[,"2"], bin_pheno[,"liver"], model="binary")  
+#+END_SRC
+
+Here's a plot of the effects. They're a bit tricky to interpret,
+as their basically log odd ratios.
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 1.1, 2.6), las=1)
+col <- c("slateblue", "violetred", "green3")
+plot(c2eff_bin, map["2"], columns=1:3, col=col)
+last_coef <- unclass(c2eff_bin)[nrow(c2eff_bin),] # pull out last coefficients
+for(i in seq(along=last_coef))
+    axis(side=4, at=last_coef[i], names(last_coef)[i], tick=FALSE, col.axis=col[i])  
+#+END_SRC
+
+Finally to plot the raw phenotypes against the genotype at a single
+putative QTL postion you can use the function `plot_pxg()` . This
+takes a vector of genotypes as produced by the `maxmarg()` function,
+which picks the most likely genotype from a set of genotype probabilites
+provided it is greater than some specified value  (the argument minprob).
+Note that the `marg`in `maxmarg` stands for `marginal` as this function
+is selecting the genotype at each position   that has maximum marginal
+probability
+For example we could get inferred genotype at the chr 2 QTL for the
+liver phenotype (at 28.6cM) as follows.
+
+#+BEGIN_SRC R
+g <- maxmarg(pr, map, chr=2, pos=28.6, return_char=TRUE)
+#+END_SRC
+
+We use return_char=True to have maxmarg() return a vector of chracter strings
+with the genotype labels.
+We then plot the liver phenotype against these genotypes as follows.
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot_pxg(g, iron$pheno[,"liver"], ylab="Liver phenotype")
+#+END_SRC
+
+We can use swap_axes=True to have the phenotype on x-axis.
+And we can use SEmult=2 to include mean +- 2 SE intervals
+
+#+BEGIN_SRC R
+par(mar=c(4.1, 4.1, 0.6, 0.6))
+plot_pxg(g, iron$pheno[,"liver"], SEmult=2, swap_axes=TRUE, xlab="Liver phenotype")
+#+END_SRC
+
+
+** SNP association
