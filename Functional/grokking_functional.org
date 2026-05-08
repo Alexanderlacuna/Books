@@ -1,0 +1,55 @@
+* grokking functional programming/ functional thinking.
+academia definitiion
+** no side effects only pure functions -> side effects 
+the drawbacks of this this it might be impractical
+** pure functions does takes an input computation and returns and output
+
+In some cases pure functions only take one input if you need to pass
+multiple you do currying.
+Why we would prefer pure functions. -> given the same input this would always the same output
+
+** Drawbacks to this:
+impractical  in some cases.: example of side efects
+*** sending an email
+*** reading a file
+*** blinking a light
+*** making a web request
+
+*** apply concepts to procedural(imperative) and  declarative 
+
+
+* distinguishing actions, calculations and data
+
+*** actions ->
+Depends on whether they are called and how many times they are ca
+lled
+Example `get_time()`
+
+#+begin_src python
+  send_email()
+   write_to_file()
+#+end_src 
+*** data ->
+what we pass for computation?
+raw material?
+ideally recorded facts about events
+#+begin_src python 
+data = {"firstname" : "Test"}
+#+end_src 
+*** calculation -> computations.
+Does care if they are called will give you the same answer always
+deterministic /..
+requires and input and output
+
+#+src python 
+def sum(a,b) - > a +b 
+#+src
+
+*** functional programmers
+**** prefer data to calculations
+**** prefer calculations to actions
+
+* functional thinking
+*** distinguishing actions, calculations and data
+*** using first-class abstractions
+*** building composable modesl 
